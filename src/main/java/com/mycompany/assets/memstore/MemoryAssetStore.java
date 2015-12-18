@@ -1,5 +1,6 @@
 package com.mycompany.assets.memstore;
 
+import com.codahale.metrics.health.HealthCheck.Result;
 import com.mycompany.assets.Asset;
 import com.mycompany.assets.AssetStore;
 import com.mycompany.assets.AssetStoreException;
@@ -35,5 +36,13 @@ public class MemoryAssetStore implements AssetStore {
         if (null == asset){
             throw new AssetStoreException("Asset not found.", Response.Status.NOT_FOUND);
         }
+    }
+
+    @Override
+    public Result checkHealth() throws Exception {
+        if (assets.size()> 1000) {
+            return Result.unhealthy("memory store has a high number of assets");
+        }
+        return Result.healthy();
     }
 }

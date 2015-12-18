@@ -18,8 +18,11 @@ public class AssetServiceApplication extends Application<AssetServiceConfigurati
 
     @Override
     public void run(AssetServiceConfiguration configuration, Environment environment) throws Exception {
-        final AssetResource resource = new AssetResource(new MemoryAssetStore());
+        final AssetStore store = new MemoryAssetStore();
+        final AssetResource resource = new AssetResource(store);
         environment.jersey().register(resource);
+        final AssetStoreHealthCheck storeHealthCheck = new AssetStoreHealthCheck(store);
+        environment.healthChecks().register("store",storeHealthCheck);
     }
 
     @Override
