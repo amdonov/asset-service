@@ -1,0 +1,8 @@
+swagger:
+  resourcePackage: com.mycompany.assets
+  title: "Asset Service"
+  description: "This is a sample service for managing assets."
+  contact: "Aaron Donovan"
+  license: "Apache 2.0"
+  licenseUrl: "http://www.apache.org/licenses/LICENSE-2.0.html"
+  version: "0.1.0-SNAPSHOT"
