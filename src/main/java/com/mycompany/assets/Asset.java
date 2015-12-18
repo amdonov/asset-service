@@ -1,6 +1,7 @@
 package com.mycompany.assets;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 
 import java.util.Date;
 import java.util.List;
@@ -25,11 +26,12 @@ public class Asset {
         this.modtime = modtime;
         this.notes = notes;
     }
-
+    @JsonPropertyDescription("identifier")
     public String getUri() {
         return uri;
     }
 
+    @JsonPropertyDescription("human readable label")
     public String getName() {
         return name;
     }
@@ -43,6 +45,7 @@ public class Asset {
         return modtime;
     }
 
+    @JsonPropertyDescription("notes")
     public List<String> getNotes() {
         return notes;
     }
