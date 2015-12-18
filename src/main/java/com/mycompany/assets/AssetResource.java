@@ -37,31 +37,29 @@ public class AssetResource {
         }
         asset.setModtime(new Date());
         mStore.addAsset(asset);
-        final URI assetUri = uriInfo.getAbsolutePathBuilder().path(asset.getUri()).build();
+        final URI assetUri = uriInfo.getAbsolutePathBuilder().queryParam("uri",asset.getUri()).build();
         return Response.created(assetUri).build();
     }
 
     @DELETE
-    @Path("/{uri}")
     @ApiOperation(value = "Delete an asset")
     @ApiResponses(value = {@ApiResponse(code = 204, message = "asset deleted"),
             @ApiResponse(code = 404, message = "asset not found"),
             @ApiResponse(code = 500, message = "unexpected error")})
     public Response deleteAsset(@ApiParam(value = "uri of asset to delete", required = true)
-                                @PathParam("uri") final String uri) {
+                                @QueryParam("uri") final String uri) {
         mStore.deleteAsset(uri);
         return Response.status(Response.Status.NO_CONTENT).build();
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/{uri}")
     @ApiOperation(value = "Retrieve an asset", produces = "application/json")
     @ApiResponses(value = {@ApiResponse(code = 304, message = "asset not modified"),
             @ApiResponse(code = 404, message = "asset not found"), @ApiResponse(code = 200, message = "success",response=Asset.class),
             @ApiResponse(code = 500, message = "unexpected error")})
     public Response getAsset(@ApiParam(value = "uri of asset to retrieve", required = true)
-                             @PathParam("uri") final String uri, @Context final Request request) {
+                             @QueryParam("uri") final String uri, @Context final Request request) {
         final Asset asset = mStore.getAsset(uri);
         if (null == asset) {
             throw new WebApplicationException("Asset not found.", Response.Status.NOT_FOUND);
