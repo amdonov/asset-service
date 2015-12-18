@@ -1,5 +1,6 @@
 package com.mycompany.assets;
 
+import com.codahale.metrics.annotation.Timed;
 import com.wordnik.swagger.annotations.*;
 
 import javax.ws.rs.*;
@@ -21,6 +22,7 @@ public class AssetResource {
     }
 
     @POST
+    @Timed
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create a new asset", consumes = "application/json")
     @ApiResponses(value = {@ApiResponse(code = 201, message = "asset created"),
@@ -37,11 +39,12 @@ public class AssetResource {
         }
         asset.setModtime(new Date());
         mStore.addAsset(asset);
-        final URI assetUri = uriInfo.getAbsolutePathBuilder().queryParam("uri",asset.getUri()).build();
+        final URI assetUri = uriInfo.getAbsolutePathBuilder().queryParam("uri", asset.getUri()).build();
         return Response.created(assetUri).build();
     }
 
     @DELETE
+    @Timed
     @ApiOperation(value = "Delete an asset")
     @ApiResponses(value = {@ApiResponse(code = 204, message = "asset deleted"),
             @ApiResponse(code = 404, message = "asset not found"),
@@ -53,6 +56,7 @@ public class AssetResource {
     }
 
     @GET
+    @Timed
     @Produces(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Retrieve an asset", produces = "application/json")
     @ApiResponses(value = {@ApiResponse(code = 304, message = "asset not modified"),
