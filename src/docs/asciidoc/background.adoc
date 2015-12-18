@@ -1,0 +1,43 @@
+== Background
+
+The asset Web services consist of RESTful services fronting a distributed database. Copies of the service would deployed to all data centers. The services are stateless and should be scaled horizontally behind load balancers.  Each data center would maintain a full copy of all data, preferably three copies as availability is a stated priority. Communication between the services and data nodes is configurable based upon consistency requirements. However, in the most likely configuration, the asset Web services would read and write only to data nodes in the local data center. Data nodes would be responsible for replicating writes across data centers.
+
+=== Database Recommendation
+
+Requirements prioritize availability and partition tolerance above consistency and explicitly state that eventual consistency is acceptable/expected. Cassandra is well-suited to these requirements. Many distributed databases use master/slave replication which have worse write performance and more complex failure characteristics. Cassandra is data center aware and provides a replication approach that has been validated by numerous internet scale companies such as Netflix and Facebook. I have never used Cassandra before, but preliminary research pointed me in that direction. I then read Cassandra High Availability and became more confident in the choice.
+
+==== Resolving Data Inconsistencies
+
+Cassandra is capable of recovering automatically from temporary network failures. All database operations include a timestamp. When resolving conflicts, the most recent timestamp wins. In the extremely unlikely case that two conflicting operations occurred at the exact same microsecond, Cassandra uses the byte value of the data to consistently resolve the conflict. There are two important time windows for recovering from node/network failures in Cassandra. The time that “hinted handoffs” are stored and the time tombstones, markers for deletes are stored. Additional recovery steps are required if these windows are exceeded.
+
+==== Database Schema
+
+Unlike most relational databases, Cassandra supports storage of multiple values in a column. This approach is used to store notes. It assists with the requirements that notes are deleted when an asset is deleted and that notes cannot be added to deleted assets. In addition, joins are not required to retrieve an assets notes. A timestamp is added and updated as required to support caching.  
+
+----
+CREATE TABLE assets (
+  uri text PRIMARY KEY, # <1>
+  name text, # <2>
+  modtime timestamp, # <3>
+  notes list<text> # <4>
+);
+----
+<1> A callout behind a line comment for C-style languages.
+<2> A callout behind a line comment for Ruby, Python, Perl, etc.
+<3> A callout behind a line comment for Clojure.
+<4> A callout behind a line comment for Clojure.
+
+
+=== Service Implementation
+
+The asset services are written in Java using the Dropwizard framework. I had planned to use Go as there seemed to be some interest in me showcasing go-restful and it's Swagger support. However, the go CQL client is under heavy development and isn't well documented or feature complete.
+Dropwizard encourages production of a standalone jar file rather than a war deployed on a Java application server. This approach is consistent with a Microservices architecture. Development and testing are accelerated. Also, it's easy to run multiple copies of the application in Docker containers. I've included a Dockerfile in the build if you'd like to test it that way.
+Additionally, Dropwizard provides support for production deployment with integrated metrics and health checks. I'd looked last year when reading Building Microservices and wanted to try it out.
+
+=== Running
+
+=== Building
+
+Dropwizard encourages Maven, but I've been using Gradle for a couple of years and couldn't make myself go back. If you have a JDK installed and it's on your path or JAVA_HOME is properly set, just run the included Gradle wrapper file. It does require an internet connection to download Gradle and project dependencies.
+
+
