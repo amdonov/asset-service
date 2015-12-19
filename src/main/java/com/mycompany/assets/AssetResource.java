@@ -40,6 +40,26 @@ public class AssetResource {
         return Response.created(assetUri).build();
     }
 
+    @POST
+    @Path("/note")
+    @Timed
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Create a new note on an asset", consumes = "application/json")
+    @ApiResponses(value = {@ApiResponse(code = 201, message = "note created"),
+            @ApiResponse(code = 400, message = "note is invalid"),
+            @ApiResponse(code = 404, message = "asset not found"),
+            @ApiResponse(code = 500, message = "unexpected error")})
+    public Response addNote(@ApiParam(value = "note to create", required = true) final Note note,
+                                @Context final UriInfo uriInfo) {
+        if (note==null) {
+            throw new WebApplicationException("note is required", Response.Status.BAD_REQUEST);
+        }
+        mStore.addNote(note);
+        // This is a little odd. Might want to create a way to retrieve a specific note directly.
+        final URI assetUri = uriInfo.getAbsolutePathBuilder().queryParam("uri", note.getUri()).build();
+        return Response.created(assetUri).build();
+    }
+
     @DELETE
     @Timed
     @ApiOperation(value = "Delete an asset")

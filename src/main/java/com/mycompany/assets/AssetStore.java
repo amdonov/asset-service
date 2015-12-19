@@ -10,6 +10,8 @@ public interface AssetStore {
 
     void addAsset(Asset asset) throws AssetStoreException;
 
+    void addNote(Note note) throws AssetStoreException;
+
     void deleteAsset(String uri) throws AssetStoreException;
 
     Result checkHealth() throws Exception;
