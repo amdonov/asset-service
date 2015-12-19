@@ -14,6 +14,35 @@ tags:
 - name: "asset"
 paths:
   /asset:
+    get:
+      tags:
+      - "asset"
+      summary: "Retrieve an asset"
+      description: ""
+      operationId: "getAsset"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "uri"
+        in: "query"
+        description: "uri of asset to retrieve"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "success"
+          schema:
+            $ref: "#/definitions/Asset"
+        400:
+          description: "invalid request"
+        500:
+          description: "unexpected error"
+        304:
+          description: "asset not modified"
+        404:
+          description: "asset not found"
     post:
       tags:
       - "asset"
@@ -35,64 +64,128 @@ paths:
         201:
           description: "asset created"
         400:
-          description: "asset is invalid"
+          description: "asset is invalid such as missing or invalid name or uri"
         500:
           description: "unexpected error"
         409:
           description: "asset exists with that uri"
-  /asset/{uri}:
-    get:
-      tags:
-      - "asset"
-      summary: "Retrieve an asset"
-      description: ""
-      operationId: "getAsset"
-      produces:
-      - "application/json"
-      parameters:
-      - name: "uri"
-        in: "path"
-        description: "uri of asset to retrieve"
-        required: true
-        type: "string"
-      responses:
-        200:
-          description: "success"
-          schema:
-            $ref: "#/definitions/Asset"
-        500:
-          description: "unexpected error"
-        304:
-          description: "asset not modified"
-        404:
-          description: "asset not found"
     delete:
       tags:
       - "asset"
       summary: "Delete an asset"
       description: ""
       operationId: "deleteAsset"
+      consumes:
+      - "application/json"
       parameters:
       - name: "uri"
-        in: "path"
+        in: "query"
         description: "uri of asset to delete"
         required: true
         type: "string"
       responses:
+        400:
+          description: "invalid request"
         500:
           description: "unexpected error"
         204:
           description: "asset deleted"
         404:
           description: "asset not found"
+  /asset/note:
+    post:
+      tags:
+      - "asset"
+      summary: "Create a new note on an asset"
+      description: ""
+      operationId: "addNote"
+      consumes:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "note to create"
+        required: false
+        schema:
+          $ref: "#/definitions/Note"
+      responses:
+        201:
+          description: "note created"
+        400:
+          description: "note is invalid"
+        500:
+          description: "unexpected error"
+        404:
+          description: "asset not found"
+  /asset/search:
+    get:
+      tags:
+      - "asset"
+      summary: "Retrieve assets based on criteria"
+      description: ""
+      operationId: "searchAssets"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters: []
+      responses:
+        200:
+          description: "success"
+          schema:
+            $ref: "#/definitions/SearchResult"
+        400:
+          description: "invalid request"
+        500:
+          description: "unexpected error"
 definitions:
-  Asset:
+  Note:
+    required:
+    - "note"
+    - "uri"
     properties:
       uri:
         type: "string"
+        description: "asset identifier"
+        readOnly: true
+      note:
+        type: "string"
+        description: "note contents"
+        readOnly: true
+  Asset:
+    required:
+    - "name"
+    - "uri"
+    properties:
+      uri:
+        type: "string"
+        description: "identifier"
+        readOnly: true
       name:
         type: "string"
+        description: "human readable label"
+        readOnly: true
       notes:
         type: "array"
+        description: "notes"
         items:
           type: "string"
+  SearchResult:
+    properties:
+      assets:
+        type: "array"
+        items:
+          $ref: "#/definitions/AssetSummary"
+  AssetSummary:
+    required:
+    - "name"
+    - "uri"
+    properties:
+      uri:
+        type: "string"
+        description: "identifier"
+        readOnly: true
+      name:
+        type: "string"
+        description: "human readable label"
+        readOnly: true

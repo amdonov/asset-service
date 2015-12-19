@@ -432,14 +432,25 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#_tags">1.5. Tags</a></li>
 </ul>
 </li>
-<li><a href="#_resources">2. Resources</a>
+<li><a href="#_background">2. Background</a>
 <ul class="sectlevel2">
-<li><a href="#_asset">2.1. Asset</a></li>
+<li><a href="#_database_recommendation">2.1. Database Recommendation</a></li>
+<li><a href="#_service_implementation">2.2. Service Implementation</a></li>
+<li><a href="#_running">2.3. Running</a></li>
+<li><a href="#_building">2.4. Building</a></li>
 </ul>
 </li>
-<li><a href="#_definitions">3. Definitions</a>
+<li><a href="#_resources">3. Resources</a>
 <ul class="sectlevel2">
-<li><a href="#_asset_2">3.1. Asset</a></li>
+<li><a href="#_asset">3.1. Asset</a></li>
+</ul>
+</li>
+<li><a href="#_definitions">4. Definitions</a>
+<ul class="sectlevel2">
+<li><a href="#_asset_2">4.1. Asset</a></li>
+<li><a href="#_assetsummary">4.2. AssetSummary</a></li>
+<li><a href="#_note">4.3. Note</a></li>
+<li><a href="#_searchresult">4.4. SearchResult</a></li>
 </ul>
 </li>
 </ul>
@@ -490,19 +501,284 @@ License URL: <a href="http://www.apache.org/licenses/LICENSE-2.0.html" class="ba
 </div>
 </div>
 <div class="sect1">
-<h2 id="_resources"><a class="anchor" href="#_resources"></a>2. Resources</h2>
+<h2 id="_background"><a class="anchor" href="#_background"></a>2. Background</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The asset Web services consist of RESTful services fronting a distributed database. Copies of the service would deployed to all data centers. The services are stateless and should be scaled horizontally behind load balancers.  Each data center would maintain a full copy of all data, preferably three copies as availability is a stated priority. Communication between the services and data nodes is configurable based upon consistency requirements. However, in the most likely configuration, the asset Web services would read and write only to data nodes in the local data center. Data nodes would be responsible for replicating writes across data centers.</p>
+</div>
+<div class="sect2">
+<h3 id="_database_recommendation"><a class="anchor" href="#_database_recommendation"></a>2.1. Database Recommendation</h3>
+<div class="paragraph">
+<p>Requirements prioritize availability and partition tolerance above consistency and explicitly state that eventual consistency is acceptable/expected. Cassandra is well-suited to these requirements. Many distributed databases use master/slave replication which have worse write performance and more complex failure characteristics. Cassandra is data center aware and provides a replication approach that has been validated by numerous internet scale companies such as Netflix and Facebook. I have never used Cassandra before, but preliminary research pointed me in that direction. I then read Cassandra High Availability and became more confident in the choice.</p>
+</div>
+<div class="sect3">
+<h4 id="_resolving_data_inconsistencies"><a class="anchor" href="#_resolving_data_inconsistencies"></a>2.1.1. Resolving Data Inconsistencies</h4>
+<div class="paragraph">
+<p>Cassandra is capable of recovering automatically from temporary network failures. All database operations include a timestamp. When resolving conflicts, the most recent timestamp wins. In the extremely unlikely case that two conflicting operations occurred at the exact same microsecond, Cassandra uses the byte value of the data to consistently resolve the conflict. There are two important time windows for recovering from node/network failures in Cassandra. The time that “hinted handoffs” are stored and the time tombstones, markers for deletes are stored. Additional recovery steps are required if these windows are exceeded.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_database_schema"><a class="anchor" href="#_database_schema"></a>2.1.2. Database Schema</h4>
+<div class="paragraph">
+<p>Unlike most relational databases, Cassandra supports storage of multiple values in a column. This approach is used to store notes. It assists with the requirements that notes are deleted when an asset is deleted and that notes cannot be added to deleted assets. In addition, joins are not required to retrieve an assets notes. A timestamp is added and updated as required to support caching.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>CREATE TABLE assets (
+  uri text PRIMARY KEY, <b class="conum">(1)</b>
+  name text, <b class="conum">(2)</b>
+  modtime timestamp, <b class="conum">(3)</b>
+  notes list&lt;text&gt; <b class="conum">(4)</b>
+);</pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>A callout behind a line comment for C-style languages.</p>
+</li>
+<li>
+<p>A callout behind a line comment for Ruby, Python, Perl, etc.</p>
+</li>
+<li>
+<p>A callout behind a line comment for Clojure.</p>
+</li>
+<li>
+<p>A callout behind a line comment for Clojure.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_service_implementation"><a class="anchor" href="#_service_implementation"></a>2.2. Service Implementation</h3>
+<div class="paragraph">
+<p>The asset services are written in Java using the Dropwizard framework. I had planned to use Go as there seemed to be some interest in me showcasing go-restful and it&#8217;s Swagger support. However, the go CQL client is under heavy development and isn&#8217;t well documented or feature complete.
+Dropwizard encourages production of a standalone jar file rather than a war deployed on a Java application server. This approach is consistent with a Microservices architecture. Development and testing are accelerated. Also, it&#8217;s easy to run multiple copies of the application in Docker containers. I&#8217;ve included a Dockerfile in the build if you&#8217;d like to test it that way.
+Additionally, Dropwizard provides support for production deployment with integrated metrics and health checks. I&#8217;d looked last year when reading Building Microservices and wanted to try it out.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_running"><a class="anchor" href="#_running"></a>2.3. Running</h3>
+
+</div>
+<div class="sect2">
+<h3 id="_building"><a class="anchor" href="#_building"></a>2.4. Building</h3>
+<div class="paragraph">
+<p>Dropwizard encourages Maven, but I&#8217;ve been using Gradle for a couple of years and couldn&#8217;t make myself go back. If you have a JDK installed and it&#8217;s on your path or JAVA_HOME is properly set, just run the included Gradle wrapper file. It does require an internet connection to download Gradle and project dependencies.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_resources"><a class="anchor" href="#_resources"></a>3. Resources</h2>
 <div class="sectionbody">
 <div class="sect2">
-<h3 id="_asset"><a class="anchor" href="#_asset"></a>2.1. Asset</h3>
+<h3 id="_asset"><a class="anchor" href="#_asset"></a>3.1. Asset</h3>
 <div class="sect3">
-<h4 id="_create_a_new_asset"><a class="anchor" href="#_create_a_new_asset"></a>2.1.1. Create a new asset</h4>
+<h4 id="_delete_an_asset"><a class="anchor" href="#_delete_an_asset"></a>3.1.1. Delete an asset</h4>
+<div class="listingblock">
+<div class="content">
+<pre>DELETE /asset</pre>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_parameters"><a class="anchor" href="#_parameters"></a>Parameters</h5>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 16%;">
+<col style="width: 16%;">
+<col style="width: 16%;">
+<col style="width: 16%;">
+<col style="width: 16%;">
+<col style="width: 16%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Required</th>
+<th class="tableblock halign-left valign-top">Schema</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">QueryParameter</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uri</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uri of asset to delete</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">true</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect4">
+<h5 id="_responses"><a class="anchor" href="#_responses"></a>Responses</h5>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 33%;">
+<col style="width: 33%;">
+<col style="width: 33%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">HTTP Code</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">204</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">asset deleted</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No Content</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">400</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">invalid request</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No Content</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">404</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">asset not found</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No Content</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">500</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">unexpected error</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No Content</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect4">
+<h5 id="_consumes"><a class="anchor" href="#_consumes"></a>Consumes</h5>
+<div class="ulist">
+<ul>
+<li>
+<p>application/json</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_retrieve_an_asset"><a class="anchor" href="#_retrieve_an_asset"></a>3.1.2. Retrieve an asset</h4>
+<div class="listingblock">
+<div class="content">
+<pre>GET /asset</pre>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_parameters_2"><a class="anchor" href="#_parameters_2"></a>Parameters</h5>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 16%;">
+<col style="width: 16%;">
+<col style="width: 16%;">
+<col style="width: 16%;">
+<col style="width: 16%;">
+<col style="width: 16%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Required</th>
+<th class="tableblock halign-left valign-top">Schema</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">QueryParameter</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uri</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uri of asset to retrieve</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">true</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect4">
+<h5 id="_responses_2"><a class="anchor" href="#_responses_2"></a>Responses</h5>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 33%;">
+<col style="width: 33%;">
+<col style="width: 33%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">HTTP Code</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">200</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">success</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#_asset">Asset</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">304</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">asset not modified</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No Content</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">400</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">invalid request</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No Content</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">404</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">asset not found</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No Content</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">500</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">unexpected error</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No Content</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect4">
+<h5 id="_consumes_2"><a class="anchor" href="#_consumes_2"></a>Consumes</h5>
+<div class="ulist">
+<ul>
+<li>
+<p>application/json</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_produces"><a class="anchor" href="#_produces"></a>Produces</h5>
+<div class="ulist">
+<ul>
+<li>
+<p>application/json</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_create_a_new_asset"><a class="anchor" href="#_create_a_new_asset"></a>3.1.3. Create a new asset</h4>
 <div class="listingblock">
 <div class="content">
 <pre>POST /asset</pre>
 </div>
 </div>
 <div class="sect4">
-<h5 id="_parameters"><a class="anchor" href="#_parameters"></a>Parameters</h5>
+<h5 id="_parameters_3"><a class="anchor" href="#_parameters_3"></a>Parameters</h5>
 <table class="tableblock frame-all grid-all spread">
 <colgroup>
 <col style="width: 16%;">
@@ -535,7 +811,7 @@ License URL: <a href="http://www.apache.org/licenses/LICENSE-2.0.html" class="ba
 </table>
 </div>
 <div class="sect4">
-<h5 id="_responses"><a class="anchor" href="#_responses"></a>Responses</h5>
+<h5 id="_responses_3"><a class="anchor" href="#_responses_3"></a>Responses</h5>
 <table class="tableblock frame-all grid-all spread">
 <colgroup>
 <col style="width: 33%;">
@@ -557,7 +833,7 @@ License URL: <a href="http://www.apache.org/licenses/LICENSE-2.0.html" class="ba
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">400</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">asset is invalid</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">asset is invalid such as missing or invalid name or uri</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">No Content</p></td>
 </tr>
 <tr>
@@ -574,7 +850,7 @@ License URL: <a href="http://www.apache.org/licenses/LICENSE-2.0.html" class="ba
 </table>
 </div>
 <div class="sect4">
-<h5 id="_consumes"><a class="anchor" href="#_consumes"></a>Consumes</h5>
+<h5 id="_consumes_3"><a class="anchor" href="#_consumes_3"></a>Consumes</h5>
 <div class="ulist">
 <ul>
 <li>
@@ -584,7 +860,7 @@ License URL: <a href="http://www.apache.org/licenses/LICENSE-2.0.html" class="ba
 </div>
 </div>
 <div class="sect4">
-<h5 id="_produces"><a class="anchor" href="#_produces"></a>Produces</h5>
+<h5 id="_produces_2"><a class="anchor" href="#_produces_2"></a>Produces</h5>
 <div class="ulist">
 <ul>
 <li>
@@ -595,14 +871,14 @@ License URL: <a href="http://www.apache.org/licenses/LICENSE-2.0.html" class="ba
 </div>
 </div>
 <div class="sect3">
-<h4 id="_delete_an_asset"><a class="anchor" href="#_delete_an_asset"></a>2.1.2. Delete an asset</h4>
+<h4 id="_create_a_new_note_on_an_asset"><a class="anchor" href="#_create_a_new_note_on_an_asset"></a>3.1.4. Create a new note on an asset</h4>
 <div class="listingblock">
 <div class="content">
-<pre>DELETE /asset/{uri}</pre>
+<pre>POST /asset/note</pre>
 </div>
 </div>
 <div class="sect4">
-<h5 id="_parameters_2"><a class="anchor" href="#_parameters_2"></a>Parameters</h5>
+<h5 id="_parameters_4"><a class="anchor" href="#_parameters_4"></a>Parameters</h5>
 <table class="tableblock frame-all grid-all spread">
 <colgroup>
 <col style="width: 16%;">
@@ -624,18 +900,18 @@ License URL: <a href="http://www.apache.org/licenses/LICENSE-2.0.html" class="ba
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">PathParameter</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">uri</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">uri of asset to delete</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">true</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BodyParameter</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">body</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">note to create</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#_note">Note</a></p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 </tbody>
 </table>
 </div>
 <div class="sect4">
-<h5 id="_responses_2"><a class="anchor" href="#_responses_2"></a>Responses</h5>
+<h5 id="_responses_4"><a class="anchor" href="#_responses_4"></a>Responses</h5>
 <table class="tableblock frame-all grid-all spread">
 <colgroup>
 <col style="width: 33%;">
@@ -651,8 +927,13 @@ License URL: <a href="http://www.apache.org/licenses/LICENSE-2.0.html" class="ba
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">204</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">asset deleted</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">201</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">note created</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No Content</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">400</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">note is invalid</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">No Content</p></td>
 </tr>
 <tr>
@@ -668,49 +949,26 @@ License URL: <a href="http://www.apache.org/licenses/LICENSE-2.0.html" class="ba
 </tbody>
 </table>
 </div>
+<div class="sect4">
+<h5 id="_consumes_4"><a class="anchor" href="#_consumes_4"></a>Consumes</h5>
+<div class="ulist">
+<ul>
+<li>
+<p>application/json</p>
+</li>
+</ul>
+</div>
+</div>
 </div>
 <div class="sect3">
-<h4 id="_retrieve_an_asset"><a class="anchor" href="#_retrieve_an_asset"></a>2.1.3. Retrieve an asset</h4>
+<h4 id="_retrieve_assets_based_on_criteria"><a class="anchor" href="#_retrieve_assets_based_on_criteria"></a>3.1.5. Retrieve assets based on criteria</h4>
 <div class="listingblock">
 <div class="content">
-<pre>GET /asset/{uri}</pre>
+<pre>GET /asset/search</pre>
 </div>
 </div>
 <div class="sect4">
-<h5 id="_parameters_3"><a class="anchor" href="#_parameters_3"></a>Parameters</h5>
-<table class="tableblock frame-all grid-all spread">
-<colgroup>
-<col style="width: 16%;">
-<col style="width: 16%;">
-<col style="width: 16%;">
-<col style="width: 16%;">
-<col style="width: 16%;">
-<col style="width: 16%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Type</th>
-<th class="tableblock halign-left valign-top">Name</th>
-<th class="tableblock halign-left valign-top">Description</th>
-<th class="tableblock halign-left valign-top">Required</th>
-<th class="tableblock halign-left valign-top">Schema</th>
-<th class="tableblock halign-left valign-top">Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">PathParameter</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">uri</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">uri of asset to retrieve</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">true</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="sect4">
-<h5 id="_responses_3"><a class="anchor" href="#_responses_3"></a>Responses</h5>
+<h5 id="_responses_5"><a class="anchor" href="#_responses_5"></a>Responses</h5>
 <table class="tableblock frame-all grid-all spread">
 <colgroup>
 <col style="width: 33%;">
@@ -728,16 +986,11 @@ License URL: <a href="http://www.apache.org/licenses/LICENSE-2.0.html" class="ba
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">200</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">success</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#_asset">Asset</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#_searchresult">SearchResult</a></p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">304</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">asset not modified</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">No Content</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">404</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">asset not found</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">400</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">invalid request</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">No Content</p></td>
 </tr>
 <tr>
@@ -749,7 +1002,17 @@ License URL: <a href="http://www.apache.org/licenses/LICENSE-2.0.html" class="ba
 </table>
 </div>
 <div class="sect4">
-<h5 id="_produces_2"><a class="anchor" href="#_produces_2"></a>Produces</h5>
+<h5 id="_consumes_5"><a class="anchor" href="#_consumes_5"></a>Consumes</h5>
+<div class="ulist">
+<ul>
+<li>
+<p>application/json</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_produces_3"><a class="anchor" href="#_produces_3"></a>Produces</h5>
 <div class="ulist">
 <ul>
 <li>
@@ -763,10 +1026,10 @@ License URL: <a href="http://www.apache.org/licenses/LICENSE-2.0.html" class="ba
 </div>
 </div>
 <div class="sect1">
-<h2 id="_definitions"><a class="anchor" href="#_definitions"></a>3. Definitions</h2>
+<h2 id="_definitions"><a class="anchor" href="#_definitions"></a>4. Definitions</h2>
 <div class="sectionbody">
 <div class="sect2">
-<h3 id="_asset_2"><a class="anchor" href="#_asset_2"></a>3.1. Asset</h3>
+<h3 id="_asset_2"><a class="anchor" href="#_asset_2"></a>4.1. Asset</h3>
 <table class="tableblock frame-all grid-all spread">
 <colgroup>
 <col style="width: 20%;">
@@ -787,23 +1050,127 @@ License URL: <a href="http://www.apache.org/licenses/LICENSE-2.0.html" class="ba
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">uri</p></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">identifier</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">true</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">name</p></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">human readable label</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">true</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">notes</p></td>
-<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">notes</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">string array</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_assetsummary"><a class="anchor" href="#_assetsummary"></a>4.2. AssetSummary</h3>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 20%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Required</th>
+<th class="tableblock halign-left valign-top">Schema</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uri</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">identifier</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">true</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">name</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">human readable label</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">true</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_note"><a class="anchor" href="#_note"></a>4.3. Note</h3>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 20%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Required</th>
+<th class="tableblock halign-left valign-top">Schema</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uri</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">asset identifier</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">true</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">note</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">note contents</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">true</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_searchresult"><a class="anchor" href="#_searchresult"></a>4.4. SearchResult</h3>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 20%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Required</th>
+<th class="tableblock halign-left valign-top">Schema</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">assets</p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#_assetsummary">AssetSummary</a> array</p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 </tbody>
@@ -814,7 +1181,7 @@ License URL: <a href="http://www.apache.org/licenses/LICENSE-2.0.html" class="ba
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2015-12-17 20:41:41 -05:00
+Last updated 2015-12-18 10:25:50 -05:00
 </div>
 </div>
 </body>
