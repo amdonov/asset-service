@@ -1,5 +1,7 @@
 package com.mycompany.assets;
 
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+
 import java.util.List;
 
 /**
@@ -17,6 +19,7 @@ public class SearchResult {
         this.assets = assets;
     }
 
+    @JsonPropertyDescription("use this value as page argument to retrieve the next page of results")
     public String getNextPage() {
         return nextPage;
     }
