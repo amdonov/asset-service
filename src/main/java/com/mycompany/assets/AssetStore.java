@@ -2,6 +2,8 @@ package com.mycompany.assets;
 
 import com.codahale.metrics.health.HealthCheck.Result;
 
+import java.util.List;
+
 /**
  * Created by amdonov on 12/16/15.
  */
@@ -11,6 +13,8 @@ public interface AssetStore {
     void addAsset(Asset asset) throws AssetStoreException;
 
     void addNote(Note note) throws AssetStoreException;
+
+    List<AssetSummary> search() throws AssetStoreException;
 
     void deleteAsset(String uri) throws AssetStoreException;
 

@@ -6,12 +6,9 @@ import org.junit.After;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.MediaType;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 /**
  * Created by amdonov on 12/18/15.
@@ -64,7 +61,7 @@ public class AssetResourceTest {
 
     @Test
     public void testMissingGet() {
-        assertEquals(404,resources.client().target("/asset").queryParam("uri", "test").request().get().getStatus());
+        assertEquals(404, resources.client().target("/asset").queryParam("uri", "test").request().get().getStatus());
     }
 
     @Test

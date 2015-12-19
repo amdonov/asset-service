@@ -31,7 +31,7 @@ public class AssetResource {
             @ApiResponse(code = 500, message = "unexpected error")})
     public Response createAsset(@ApiParam(value = "asset to create", required = true) final Asset asset,
                                 @Context final UriInfo uriInfo) {
-        if (asset==null) {
+        if (asset == null) {
             throw new WebApplicationException("asset is required", Response.Status.BAD_REQUEST);
         }
         asset.setModtime(new Date());
@@ -50,8 +50,8 @@ public class AssetResource {
             @ApiResponse(code = 404, message = "asset not found"),
             @ApiResponse(code = 500, message = "unexpected error")})
     public Response addNote(@ApiParam(value = "note to create", required = true) final Note note,
-                                @Context final UriInfo uriInfo) {
-        if (note==null) {
+                            @Context final UriInfo uriInfo) {
+        if (note == null) {
             throw new WebApplicationException("note is required", Response.Status.BAD_REQUEST);
         }
         mStore.addNote(note);
@@ -75,13 +75,28 @@ public class AssetResource {
     }
 
     @GET
+    @Path("/search")
+    @Timed
+    @Produces(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Retrieve assets based on criteria", produces = "application/json")
+    @ApiResponses(value = {
+            @ApiResponse(code = 400, message = "invalid request"),
+            @ApiResponse(code = 200, message = "success", response = SearchResult.class),
+            @ApiResponse(code = 500, message = "unexpected error")})
+    public Response searchAssets() {
+        // Just returning summary and aren't letting user set number of assets per page.
+        // If either of those become a requirement, switch to streaming result.
+        return Response.ok().entity(mStore.search()).build();
+    }
+
+    @GET
     @Timed
     @Produces(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Retrieve an asset", produces = "application/json")
     @ApiResponses(value = {@ApiResponse(code = 304, message = "asset not modified"),
             @ApiResponse(code = 400, message = "invalid request"),
             @ApiResponse(code = 404, message = "asset not found"),
-            @ApiResponse(code = 200, message = "success",response=Asset.class),
+            @ApiResponse(code = 200, message = "success", response = Asset.class),
             @ApiResponse(code = 500, message = "unexpected error")})
     public Response getAsset(@ApiParam(value = "uri of asset to retrieve", required = true)
                              @QueryParam("uri") final String uri, @Context final Request request) {

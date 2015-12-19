@@ -1,15 +1,14 @@
 package com.mycompany.assets.memstore;
 
 import com.codahale.metrics.health.HealthCheck.Result;
-import com.mycompany.assets.Asset;
-import com.mycompany.assets.AssetStore;
-import com.mycompany.assets.AssetStoreException;
-import com.mycompany.assets.Note;
+import com.mycompany.assets.*;
 
 import javax.ws.rs.core.Response;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * Created by amdonov on 12/16/15.
@@ -37,10 +36,21 @@ public class MemoryAssetStore implements AssetStore {
         if (null == asset) {
             throw new AssetStoreException("Asset not found.", Response.Status.NOT_FOUND);
         }
+        // Although the asset map is thread-safe the note collection isn't
+        // Make sure we don't create problems for other threads
         synchronized (asset) {
             asset.setModtime(new Date());
             asset.getNotes().add(note.getNote());
         }
+    }
+
+    @Override
+    public List<AssetSummary> search() throws AssetStoreException {
+        // Create summary collection from the assets
+        // avoids marshalling the notes.
+        return assets.values().stream()
+                .map((a) -> new AssetSummary(a.getUri(), a.getName()))
+                .collect(Collectors.toList());
     }
 
     @Override

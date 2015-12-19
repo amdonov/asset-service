@@ -7,20 +7,21 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import java.net.URI;
 
 /**
- * Created by amdonov on 12/18/15.
+ * Created by amdonov on 12/16/15.
  */
-public class Note {
-    private String uri;
-    private String note;
+public class AssetSummary {
+
+    private final String uri;
+    private final String name;
 
     /**
      * Constructor for Jackson to use rather than reflection. Causes validation of fields.
      */
     @JsonCreator
-    public Note(@JsonProperty("uri") String uri, @JsonProperty("note") String note) {
-        // Confirm that note is provided
-        if (note==null || note.isEmpty()) {
-            throw new IllegalArgumentException("note is required");
+    public AssetSummary(@JsonProperty("uri") String uri, @JsonProperty("name") String name) {
+        // Confirm that name is provided
+        if (name==null || name.isEmpty()) {
+            throw new IllegalArgumentException("name is required");
         }
         // Confirm that uri is provided and is valid
         if (uri==null || uri.isEmpty()) {
@@ -28,19 +29,19 @@ public class Note {
         }
         URI.create(uri);
         this.uri = uri;
-        this.note = note;
+        this.name = name;
     }
 
-    @JsonPropertyDescription("asset identifier")
+    @JsonPropertyDescription("identifier")
     @JsonProperty(required = true)
     public String getUri() {
         return uri;
     }
 
-    @JsonPropertyDescription("note contents")
+    @JsonPropertyDescription("human readable label")
     @JsonProperty(required = true)
-    public String getNote() {
-        return note;
+    public String getName() {
+        return name;
     }
 
     @Override
@@ -48,16 +49,17 @@ public class Note {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Note note1 = (Note) o;
+        AssetSummary that = (AssetSummary) o;
 
-        if (!uri.equals(note1.uri)) return false;
-        return note.equals(note1.note);
+        if (!uri.equals(that.uri)) return false;
+        return name.equals(that.name);
+
     }
 
     @Override
     public int hashCode() {
         int result = uri.hashCode();
-        result = 31 * result + note.hashCode();
+        result = 31 * result + name.hashCode();
         return result;
     }
 }
