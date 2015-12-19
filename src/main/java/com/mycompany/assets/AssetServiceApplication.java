@@ -1,7 +1,9 @@
 package com.mycompany.assets;
 
 import com.mycompany.assets.store.CassandraAssetStore;
+import com.mycompany.assets.store.CassandraStoreConfiguration;
 import com.mycompany.assets.store.MemoryAssetStore;
+import com.mycompany.assets.store.MemoryStoreConfiguration;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
@@ -18,12 +20,24 @@ public class AssetServiceApplication extends Application<AssetServiceConfigurati
 
     @Override
     public void run(AssetServiceConfiguration configuration, Environment environment) throws Exception {
-        //final AssetStore store = new MemoryAssetStore();
-        final AssetStore store = new CassandraAssetStore();
+        AssetStore store = null;
+        // If both cassandra and memory are configured use cassandra
+        CassandraStoreConfiguration cassandraStoreConfiguration = configuration.getCassandraStoreConfiguration();
+        if (cassandraStoreConfiguration!=null) {
+            store = new CassandraAssetStore(cassandraStoreConfiguration);
+        }
+        MemoryStoreConfiguration memoryStoreConfiguration = configuration.getMemoryStoreConfiguration();
+        if (memoryStoreConfiguration != null && store == null) {
+            store = new MemoryAssetStore(memoryStoreConfiguration);
+        }
+        // This shouldn't happen because of Dropwizard configuration validation, but just in case.
+        if (store==null) {
+            throw new IllegalStateException("No Asset store is available.");
+        }
         final AssetResource resource = new AssetResource(store);
         environment.jersey().register(resource);
         final AssetStoreHealthCheck storeHealthCheck = new AssetStoreHealthCheck(store);
-        environment.healthChecks().register("store",storeHealthCheck);
+        environment.healthChecks().register("store", storeHealthCheck);
     }
 
     @Override

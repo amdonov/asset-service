@@ -1,5 +1,7 @@
-memory:
+cassandra:
   resultsPerPage: 50
+  contactPoint: 127.0.0.1
+  datacenter: datacenter1
 
 swagger:
   resourcePackage: com.mycompany.assets

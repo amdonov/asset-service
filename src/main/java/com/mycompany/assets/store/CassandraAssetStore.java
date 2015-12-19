@@ -25,23 +25,25 @@ public class CassandraAssetStore implements AssetStore {
     private final PreparedStatement deleteAsset;
     private final PreparedStatement getAsset;
     private final PreparedStatement addNote;
-    final int RESULTS_PER_PAGE = 100;
+    final int RESULTS_PER_PAGE;
+    final int HEALTHY_NODE_COUNT;
 
-    public CassandraAssetStore() {
+    public CassandraAssetStore(final CassandraStoreConfiguration config) {
+        RESULTS_PER_PAGE = config.getResultsPerPage();
+        HEALTHY_NODE_COUNT = config.getHealthyNodeCount();
+
         // Write and read from a majority of local data center hosts
-        cluster = Cluster.builder().addContactPoint("127.0.0.1").
+        cluster = Cluster.builder().addContactPoint(config.getContactPoint()).
                 withLoadBalancingPolicy(new TokenAwarePolicy(DCAwareRoundRobinPolicy.builder().
-                        withUsedHostsPerRemoteDc(2).withLocalDc("datacenter1").build())).
+                        withUsedHostsPerRemoteDc(config.getUsedHostsPerRemoteDC()).withLocalDc(config.getDatacenter()).build())).
                 withQueryOptions(new QueryOptions().
                         setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)).build();
         session = cluster.connect();
-        String query = "CREATE KEYSPACE IF NOT EXISTS Assets WITH REPLICATION "
-                + "= {'class':'NetworkTopologyStrategy', 'datacenter1':2};";
-        session.execute(query);
-        //using the KeySpace
+        session.execute(config.getKeyspaceStatement());
+        //use the KeySpace
         session.execute("USE Assets");
-        query = "CREATE TABLE IF NOT EXISTS assets (  uri text PRIMARY KEY, name text,  modtime timestamp,  notes list<text> );";
-        session.execute(query);
+        String tableStmt = "CREATE TABLE IF NOT EXISTS assets (  uri text PRIMARY KEY, name text,  modtime timestamp,  notes list<text> );";
+        session.execute(tableStmt);
         // Don't let adding a note create an asset
         addNote = session.prepare("UPDATE assets SET modtime = ?, notes = notes +  ?  where uri = ? IF EXISTS");
         getAsset = session.prepare("select uri, name, modtime, notes from assets where uri=?");
@@ -143,8 +145,8 @@ public class CassandraAssetStore implements AssetStore {
 
     @Override
     public HealthCheck.Result checkHealth() throws Exception {
-        // TODO make this more meaningful and flexible
-        if (session.getState().getConnectedHosts().size() < 3) {
+        // TODO make this more meaningful
+        if (session.getState().getConnectedHosts().size() < HEALTHY_NODE_COUNT) {
             return HealthCheck.Result.unhealthy("One or more nodes are down.");
         }
         return HealthCheck.Result.healthy();

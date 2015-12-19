@@ -1,6 +1,7 @@
 package com.mycompany.assets;
 
 import com.mycompany.assets.store.MemoryAssetStore;
+import com.mycompany.assets.store.MemoryStoreConfiguration;
 import io.dropwizard.testing.junit.ResourceTestRule;
 import org.junit.After;
 import org.junit.ClassRule;
@@ -15,7 +16,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class AssetResourceTest {
     // Use MemoryStore directly to have access to clear()
-    private static final MemoryAssetStore mStore = new MemoryAssetStore();
+    private static final MemoryAssetStore mStore = new MemoryAssetStore(new MemoryStoreConfiguration());
 
     @ClassRule
     public static final ResourceTestRule resources = ResourceTestRule.builder().

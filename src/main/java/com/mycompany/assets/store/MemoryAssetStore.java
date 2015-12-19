@@ -17,8 +17,13 @@ import java.util.stream.Collectors;
 public class MemoryAssetStore implements AssetStore {
 
     private final Map<String, Asset> assets = new ConcurrentHashMap<>();
-    final int RESULTS_PER_PAGE = 100;
+    final int RESULTS_PER_PAGE;
+    final int WARNING_ASSET_COUNT;
 
+    public MemoryAssetStore(MemoryStoreConfiguration config) {
+        RESULTS_PER_PAGE = config.getResultsPerPage();
+        WARNING_ASSET_COUNT = config.getWarningAssetCount();
+    }
 
     @Override
     public Asset getAsset(String uri) {
@@ -105,7 +110,7 @@ public class MemoryAssetStore implements AssetStore {
 
     @Override
     public Result checkHealth() throws Exception {
-        if (assets.size() > 1000) {
+        if (assets.size() > WARNING_ASSET_COUNT) {
             return Result.unhealthy("memory store has a high number of assets");
         }
         return Result.healthy();
