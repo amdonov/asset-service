@@ -4,6 +4,7 @@ import com.codahale.metrics.health.HealthCheck.Result;
 import com.mycompany.assets.*;
 
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +22,17 @@ public class MemoryAssetStore implements AssetStore {
 
     @Override
     public Asset getAsset(String uri) {
-        return assets.get(uri);
+        final Asset asset = assets.get(uri);
+        if (null == asset) {
+            return null;
+        }
+        // Don't return the asset directly. It contains notes that could throw a concurrent modification exception
+        // if another thread is reading while a request comes in to add a note.
+        final List<String> notes = new ArrayList<>();
+        synchronized (asset) {
+            notes.addAll(asset.getNotes());
+        }
+        return new Asset(asset.getUri(),asset.getName(),asset.getModtime(),notes);
     }
 
     @Override
