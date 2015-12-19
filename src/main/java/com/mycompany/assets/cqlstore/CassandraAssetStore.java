@@ -105,7 +105,6 @@ public class CassandraAssetStore implements AssetStore {
             final Statement stmt = new SimpleStatement("select uri, name from assets");
             stmt.setFetchSize(RESULTS_PER_PAGE);
             if (page != null) {
-                result.setPreviousPage(page);
                 stmt.setPagingState(
                         PagingState.fromString(page));
             }

@@ -8,7 +8,6 @@ import java.util.List;
 public class SearchResult {
     private List<AssetSummary> assets;
     private String nextPage;
-    private String previousPage;
 
     public List<AssetSummary> getAssets() {
         return assets;
@@ -24,13 +23,5 @@ public class SearchResult {
 
     public void setNextPage(String nextPage) {
         this.nextPage = nextPage;
-    }
-
-    public String getPreviousPage() {
-        return previousPage;
-    }
-
-    public void setPreviousPage(String previousPage) {
-        this.previousPage = previousPage;
     }
 }

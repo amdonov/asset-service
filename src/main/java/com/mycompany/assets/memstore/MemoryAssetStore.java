@@ -16,6 +16,8 @@ import java.util.stream.Collectors;
 public class MemoryAssetStore implements AssetStore {
 
     private final Map<String, Asset> assets = new ConcurrentHashMap<>();
+    final int RESULTS_PER_PAGE = 100;
+
 
     @Override
     public Asset getAsset(String uri) {
@@ -49,9 +51,36 @@ public class MemoryAssetStore implements AssetStore {
         final SearchResult result = new SearchResult();
         // Create summary collection from the assets
         // avoids marshalling the notes.
-        result.setAssets(assets.values().stream()
+        final List<AssetSummary> summaries = assets.values().stream()
                 .map((a) -> new AssetSummary(a.getUri(), a.getName()))
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList());
+        int pageNum;
+        if (page==null) {
+            pageNum = 1;
+        } else {
+            try {
+                pageNum = Integer.parseInt(page);
+            } catch (NumberFormatException ex) {
+                throw new AssetStoreException("page is not an integer", Response.Status.BAD_REQUEST);
+            }
+            if (pageNum<1) {
+                throw new AssetStoreException("page is not an positive number", Response.Status.BAD_REQUEST);
+            }
+        }
+        int fromIndex = (pageNum-1)*RESULTS_PER_PAGE;
+        // High endpoint is exclusive don't need to subtract 1
+        int toIndex = fromIndex + RESULTS_PER_PAGE;
+        int size = summaries.size();
+        if (fromIndex>size) {
+            throw new AssetStoreException("page exceeds the number of available assets", Response.Status.BAD_REQUEST);
+        }
+        if (toIndex>size) {
+            toIndex = size;
+        } else {
+            // there are more results
+            result.setNextPage(Integer.toString(pageNum+1));
+        }
+        result.setAssets(summaries.subList(fromIndex,toIndex));
         return result;
     }
 
