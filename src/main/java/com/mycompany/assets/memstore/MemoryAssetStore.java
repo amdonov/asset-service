@@ -23,7 +23,7 @@ public class MemoryAssetStore implements AssetStore {
     }
 
     @Override
-    public void addAsset(Asset asset) throws AssetStoreException {
+    public void addAsset(Asset asset) {
         final Asset existingAsset = assets.putIfAbsent(asset.getUri(), asset);
         if (existingAsset != null) {
             throw new AssetStoreException("Asset with that URI alredy exists", Response.Status.CONFLICT);
@@ -31,7 +31,7 @@ public class MemoryAssetStore implements AssetStore {
     }
 
     @Override
-    public void addNote(Note note) throws AssetStoreException {
+    public void addNote(Note note) {
         final Asset asset = assets.get(note.getUri());
         if (null == asset) {
             throw new AssetStoreException("Asset not found.", Response.Status.NOT_FOUND);
@@ -45,7 +45,7 @@ public class MemoryAssetStore implements AssetStore {
     }
 
     @Override
-    public List<AssetSummary> search() throws AssetStoreException {
+    public List<AssetSummary> search() {
         // Create summary collection from the assets
         // avoids marshalling the notes.
         return assets.values().stream()
@@ -54,7 +54,7 @@ public class MemoryAssetStore implements AssetStore {
     }
 
     @Override
-    public void deleteAsset(String uri) throws AssetStoreException {
+    public void deleteAsset(String uri) {
         final Asset asset = assets.remove(uri);
         if (null == asset) {
             throw new AssetStoreException("Asset not found.", Response.Status.NOT_FOUND);

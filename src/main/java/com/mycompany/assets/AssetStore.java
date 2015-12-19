@@ -10,13 +10,13 @@ import java.util.List;
 public interface AssetStore {
     Asset getAsset(String uri);
 
-    void addAsset(Asset asset) throws AssetStoreException;
+    void addAsset(Asset asset);
 
-    void addNote(Note note) throws AssetStoreException;
+    void addNote(Note note);
 
-    List<AssetSummary> search() throws AssetStoreException;
+    List<AssetSummary> search();
 
-    void deleteAsset(String uri) throws AssetStoreException;
+    void deleteAsset(String uri);
 
     Result checkHealth() throws Exception;
 }

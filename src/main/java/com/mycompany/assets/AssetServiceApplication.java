@@ -1,5 +1,6 @@
 package com.mycompany.assets;
 
+import com.mycompany.assets.cqlstore.CassandraAssetStore;
 import com.mycompany.assets.memstore.MemoryAssetStore;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
@@ -17,7 +18,8 @@ public class AssetServiceApplication extends Application<AssetServiceConfigurati
 
     @Override
     public void run(AssetServiceConfiguration configuration, Environment environment) throws Exception {
-        final AssetStore store = new MemoryAssetStore();
+        //final AssetStore store = new MemoryAssetStore();
+        final AssetStore store = new CassandraAssetStore();
         final AssetResource resource = new AssetResource(store);
         environment.jersey().register(resource);
         final AssetStoreHealthCheck storeHealthCheck = new AssetStoreHealthCheck(store);
