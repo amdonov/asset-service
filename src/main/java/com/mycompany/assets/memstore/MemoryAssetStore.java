@@ -45,12 +45,14 @@ public class MemoryAssetStore implements AssetStore {
     }
 
     @Override
-    public List<AssetSummary> search() {
+    public SearchResult search(String page) {
+        final SearchResult result = new SearchResult();
         // Create summary collection from the assets
         // avoids marshalling the notes.
-        return assets.values().stream()
+        result.setAssets(assets.values().stream()
                 .map((a) -> new AssetSummary(a.getUri(), a.getName()))
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
+        return result;
     }
 
     @Override

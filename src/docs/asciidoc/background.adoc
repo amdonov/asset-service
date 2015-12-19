@@ -12,7 +12,7 @@ Cassandra is capable of recovering automatically from temporary network failures
 
 ==== Database Schema
 
-Unlike most relational databases, Cassandra supports storage of multiple values in a column. This approach is used to store notes. It assists with the requirements that notes are deleted when an asset is deleted and that notes cannot be added to deleted assets. In addition, joins are not required to retrieve an assets notes. A timestamp is added and updated as required to support caching.  
+Unlike most relational databases, Cassandra supports storage of multiple values in a column. This approach is used to store notes. It assists with the requirements that notes are deleted when an asset is deleted and that notes cannot be added to deleted assets. In addition, joins are not required to retrieve an assets notes.
 
 ----
 CREATE TABLE assets (
@@ -22,10 +22,10 @@ CREATE TABLE assets (
   notes list<text> # <4>
 );
 ----
-<1> A callout behind a line comment for C-style languages.
-<2> A callout behind a line comment for Ruby, Python, Perl, etc.
-<3> A callout behind a line comment for Clojure.
-<4> A callout behind a line comment for Clojure.
+<1> Use the asset's uri to uniquely identify it.
+<2> Holds the human readable name as required.
+<3> A timestamp is added and updated as required to support caching.
+<4> Notes are stored in the same table as a collection.
 
 
 === Service Implementation
@@ -38,6 +38,60 @@ Additionally, Dropwizard provides support for production deployment with integra
 
 === Building
 
-Dropwizard encourages Maven, but I've been using Gradle for a couple of years and couldn't make myself go back. If you have a JDK installed and it's on your path or JAVA_HOME is properly set, just run the included Gradle wrapper file. It does require an internet connection to download Gradle and project dependencies.
+Dropwizard encourages Maven, but I've been using Gradle for a couple of years and couldn't make myself go back. If you have a version 8 JDK installed and it's on your path or JAVA_HOME is properly set, just run the included Gradle wrapper file. It does require an internet connection to download Gradle and project dependencies. The result is an executable jar with all dependencies bundled in.
+
+=== Metrics
+
+All service calls leverage DropWizards metrics collection. Metrics are available on the admin port, 8081 by default, at the path of /metrics?pretty=true.
+I didn't perform any real load testing. I don't have enough information about load and testing on laptop vice geographically distributed datacenters isn't representative.
+ However, in support of paging development, I created 10,000 assets with curl, so assets were created one at a time without concurrent reads. The results are posted
+ below. For comparison, I did the same thing with the memory store.
+
+Cassandra
+----
+ "com.mycompany.assets.AssetResource.createAsset" : {
+       "count" : 10000,
+       "max" : 0.017478096000000002,
+       "mean" : 0.002814376620566178,
+       "min" : 0.001953089,
+       "p50" : 0.002424475,
+       "p75" : 0.0028103620000000003,
+       "p95" : 0.004579411,
+       "p98" : 0.007236607000000001,
+       "p99" : 0.008595328000000001,
+       "p999" : 0.01311428,
+       "stddev" : 0.0012552083933711567,
+       "m15_rate" : 10.092396615694161,
+       "m1_rate" : 46.50558186597699,
+       "m5_rate" : 25.105013904684526,
+       "mean_rate" : 56.92798508217708, // <1>
+       "duration_units" : "seconds",
+       "rate_units" : "calls/second"
+     }
+----
+<1> Averages 57 inserts/second with service database running locally. Data is written 3 times.
 
 
+Memory
+----
+"com.mycompany.assets.AssetResource.createAsset" : {
+      "count" : 10000,
+      "max" : 0.001961846,
+      "mean" : 1.1835166136245698E-4,
+      "min" : 7.8756E-5,
+      "p50" : 9.636100000000001E-5,
+      "p75" : 1.1936600000000001E-4,
+      "p95" : 2.30549E-4,
+      "p98" : 2.98819E-4,
+      "p99" : 4.07568E-4,
+      "p999" : 0.001961846,
+      "stddev" : 9.236737647115021E-5,
+      "m15_rate" : 10.293621034472327,
+      "m1_rate" : 58.078389437591916,
+      "m5_rate" : 26.57566846742506,
+      "mean_rate" : 76.92383281630354,
+      "duration_units" : "seconds",
+      "rate_units" : "calls/second"
+    }
+----
+<1> On 77 calls/second for the memory store. The CPU was fairly idle. Need a multi-threaded client to excercise the service.

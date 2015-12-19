@@ -2,6 +2,7 @@ package com.mycompany.assets.cqlstore;
 
 import com.codahale.metrics.health.HealthCheck;
 import com.datastax.driver.core.*;
+import com.datastax.driver.core.exceptions.PagingStateException;
 import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
 import com.datastax.driver.core.policies.TokenAwarePolicy;
 import com.mycompany.assets.*;
@@ -24,7 +25,7 @@ public class CassandraAssetStore implements AssetStore {
     private final PreparedStatement deleteAsset;
     private final PreparedStatement getAsset;
     private final PreparedStatement addNote;
-
+    final int RESULTS_PER_PAGE = 100;
 
     public CassandraAssetStore() {
         // Write and read from a majority of local data center hosts
@@ -97,13 +98,40 @@ public class CassandraAssetStore implements AssetStore {
     }
 
     @Override
-    public List<AssetSummary> search() {
-        ResultSet rs = session.execute("select uri, name from assets");
-        List<AssetSummary> assets = new ArrayList<>();
-        for (Row row : rs) {
-            assets.add(new AssetSummary(row.getString("uri"), row.getString("name")));
+    public SearchResult search(String page) {
+        try {
+            final SearchResult result = new SearchResult();
+            final List<AssetSummary> assets = new ArrayList<>();
+            final Statement stmt = new SimpleStatement("select uri, name from assets");
+            stmt.setFetchSize(RESULTS_PER_PAGE);
+            if (page != null) {
+                result.setPreviousPage(page);
+                stmt.setPagingState(
+                        PagingState.fromString(page));
+            }
+
+            ResultSet rs = session.execute(stmt);
+            PagingState nextPage = rs.getExecutionInfo().getPagingState();
+
+            // Note that we don't rely on RESULTS_PER_PAGE, since Cassandra might
+            // have not respected it, or we might be at the end of the result set
+            int remaining = rs.getAvailableWithoutFetching();
+            for (Row row : rs) {
+                assets.add(new AssetSummary(row.getString("uri"), row.getString("name")));
+                if (--remaining == 0) {
+                    break;
+                }
+            }
+            result.setAssets(assets);
+
+            // This will be null if there are no more pages
+            if (nextPage != null) {
+                result.setNextPage(nextPage.toString());
+            }
+            return result;
+        } catch (PagingStateException ex) {
+            throw new AssetStoreException(ex.getMessage(), Response.Status.BAD_REQUEST);
         }
-        return assets;
     }
 
     @Override

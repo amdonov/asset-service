@@ -46,6 +46,7 @@ repositories {
 dependencies {
     compile 'io.dropwizard:dropwizard-core:0.9.1'
     compile 'io.federecio:dropwizard-swagger:0.7.0'
+    compile 'com.datastax.cassandra:cassandra-driver-core:2.1.9'
     testCompile 'junit:junit:4.12'
     testCompile 'io.dropwizard:dropwizard-testing:0.9.1'
 }

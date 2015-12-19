@@ -14,7 +14,7 @@ public interface AssetStore {
 
     void addNote(Note note);
 
-    List<AssetSummary> search();
+    SearchResult search(String page);
 
     void deleteAsset(String uri);
 

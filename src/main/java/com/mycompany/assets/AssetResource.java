@@ -80,13 +80,13 @@ public class AssetResource {
     @Produces(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Retrieve assets based on criteria", produces = "application/json")
     @ApiResponses(value = {
-            @ApiResponse(code = 400, message = "invalid request"),
+            @ApiResponse(code = 400, message = "invalid request such as a bad page"),
             @ApiResponse(code = 200, message = "success", response = SearchResult.class),
             @ApiResponse(code = 500, message = "unexpected error")})
-    public Response searchAssets() {
+    public Response searchAssets(@ApiParam(value = "result page to display") @QueryParam("page")String page) {
         // Just returning summary and aren't letting user set number of assets per page.
         // If either of those become a requirement, switch to streaming result.
-        return Response.ok().entity(mStore.search()).build();
+        return Response.ok().entity(mStore.search(page)).build();
     }
 
     @GET
