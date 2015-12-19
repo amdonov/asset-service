@@ -45,4 +45,9 @@ public class MemoryAssetStore implements AssetStore {
         }
         return Result.healthy();
     }
+
+    // facilitates unit testing
+    public void clear() {
+        assets.clear();
+    }
 }

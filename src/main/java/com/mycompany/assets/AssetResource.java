@@ -27,15 +27,12 @@ public class AssetResource {
     @ApiOperation(value = "Create a new asset", consumes = "application/json")
     @ApiResponses(value = {@ApiResponse(code = 201, message = "asset created"),
             @ApiResponse(code = 409, message = "asset exists with that uri"),
-            @ApiResponse(code = 400, message = "asset is invalid"),
+            @ApiResponse(code = 400, message = "asset is invalid such as missing or invalid name or uri"),
             @ApiResponse(code = 500, message = "unexpected error")})
     public Response createAsset(@ApiParam(value = "asset to create", required = true) final Asset asset,
                                 @Context final UriInfo uriInfo) {
-        if (null == asset.getUri()) {
-            throw new WebApplicationException("URI of asset is required.", Response.Status.BAD_REQUEST);
-        }
-        if (null == asset.getName()) {
-            throw new WebApplicationException("Name of asset is required.", Response.Status.BAD_REQUEST);
+        if (asset==null) {
+            throw new WebApplicationException("asset is required", Response.Status.BAD_REQUEST);
         }
         asset.setModtime(new Date());
         mStore.addAsset(asset);
@@ -47,10 +44,12 @@ public class AssetResource {
     @Timed
     @ApiOperation(value = "Delete an asset")
     @ApiResponses(value = {@ApiResponse(code = 204, message = "asset deleted"),
+            @ApiResponse(code = 400, message = "invalid request"),
             @ApiResponse(code = 404, message = "asset not found"),
             @ApiResponse(code = 500, message = "unexpected error")})
     public Response deleteAsset(@ApiParam(value = "uri of asset to delete", required = true)
                                 @QueryParam("uri") final String uri) {
+        validateUri(uri);
         mStore.deleteAsset(uri);
         return Response.status(Response.Status.NO_CONTENT).build();
     }
@@ -60,10 +59,13 @@ public class AssetResource {
     @Produces(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Retrieve an asset", produces = "application/json")
     @ApiResponses(value = {@ApiResponse(code = 304, message = "asset not modified"),
-            @ApiResponse(code = 404, message = "asset not found"), @ApiResponse(code = 200, message = "success",response=Asset.class),
+            @ApiResponse(code = 400, message = "invalid request"),
+            @ApiResponse(code = 404, message = "asset not found"),
+            @ApiResponse(code = 200, message = "success",response=Asset.class),
             @ApiResponse(code = 500, message = "unexpected error")})
     public Response getAsset(@ApiParam(value = "uri of asset to retrieve", required = true)
                              @QueryParam("uri") final String uri, @Context final Request request) {
+        validateUri(uri);
         final Asset asset = mStore.getAsset(uri);
         if (null == asset) {
             throw new WebApplicationException("Asset not found.", Response.Status.NOT_FOUND);
@@ -77,4 +79,17 @@ public class AssetResource {
         builder.lastModified(asset.getModtime());
         return builder.build();
     }
+
+    private void validateUri(String uri) {
+        if (null == uri || uri.isEmpty()) {
+            throw new WebApplicationException("uri query param is required.",
+                    Response.Status.BAD_REQUEST);
+        }
+        try {
+            URI.create(uri);
+        } catch (IllegalArgumentException ex) {
+            throw new WebApplicationException(ex.getMessage(), Response.Status.BAD_REQUEST);
+        }
+    }
+
 }
