@@ -1,6 +1,6 @@
 package com.mycompany.assets;
 
-import com.mycompany.assets.memstore.MemoryAssetStore;
+import com.mycompany.assets.store.MemoryAssetStore;
 import io.dropwizard.testing.junit.ResourceTestRule;
 import org.junit.After;
 import org.junit.ClassRule;

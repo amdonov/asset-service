@@ -1,4 +1,4 @@
-package com.mycompany.assets.memstore;
+package com.mycompany.assets.store;
 
 import com.codahale.metrics.health.HealthCheck.Result;
 import com.mycompany.assets.*;

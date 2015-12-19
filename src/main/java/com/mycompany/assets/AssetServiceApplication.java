@@ -1,7 +1,7 @@
 package com.mycompany.assets;
 
-import com.mycompany.assets.cqlstore.CassandraAssetStore;
-import com.mycompany.assets.memstore.MemoryAssetStore;
+import com.mycompany.assets.store.CassandraAssetStore;
+import com.mycompany.assets.store.MemoryAssetStore;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;

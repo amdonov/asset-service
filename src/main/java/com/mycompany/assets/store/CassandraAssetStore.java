@@ -1,4 +1,4 @@
-package com.mycompany.assets.cqlstore;
+package com.mycompany.assets.store;
 
 import com.codahale.metrics.health.HealthCheck;
 import com.datastax.driver.core.*;
