@@ -111,7 +111,7 @@ link:http://localhost:8081/[http:localhost:8081/] They included health checks, m
 If desirable, the services can run in docker.
 
 ----
-docker run -it amdonov/asset-service server sample-config.yaml
+docker run -it -p 8080:8080 -p 8081:8081 amdonov/asset-service server sample-config.yaml
 ----
 
 === Metrics
