@@ -44,7 +44,7 @@ CREATE TABLE assets (
 === Service Implementation
 
 The asset services are written in Java using the link:http://www.dropwizard.io/0.9.1/docs/[Dropwizard] framework. I had planned to use Go as there seemed
-to be some interest in me showcasing go-restful and it's Swagger support. However, the go CQL client is under heavy
+to be some interest in me showcasing go-restful and its Swagger support. However, the go CQL client is under heavy
 development and isn't well documented or feature complete. Dropwizard encourages production of a standalone jar file
 rather than a war deployed on a Java application server. This approach is consistent with a Microservices architecture.
 Development and testing are accelerated. Also, it's easy to run multiple copies of the application in Docker containers.
