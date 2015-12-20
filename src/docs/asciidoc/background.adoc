@@ -1,6 +1,6 @@
 == Background
 
-The asset Web services consist of RESTful services fronting a distributed database. Copies of the service would deployed to all data centers. The services are stateless and should be scaled horizontally behind load balancers.  Each data center would maintain a full copy of all data, preferably three copies as availability is a stated priority. Communication between the services and data nodes is configurable based upon consistency requirements. However, in the most likely configuration, the asset Web services would read and write only to data nodes in the local data center. Data nodes would be responsible for replicating writes across data centers.
+The asset Web services consist of RESTful services fronting a distributed database. Copies of the service would be deployed to all data centers. The services are stateless and should be scaled horizontally behind load balancers.  Each data center would maintain a full copy of all data, preferably three copies as availability is a stated priority. Communication between the services and data nodes is configurable based upon consistency requirements. However, in the most likely configuration, the asset Web services would read and write only to data nodes in the local data center. Data nodes would be responsible for replicating writes across data centers.
 
 === Database Recommendation
 
@@ -43,7 +43,7 @@ CREATE TABLE assets (
 
 === Service Implementation
 
-The asset services are written in Java using the link:http://www.dropwizard.io/0.9.1/docs/[Dropwizard] framework. I had planned to use Go as there seemed
+The asset services are written in Java using the link:http://www.dropwizard.io/0.9.1/docs/[Dropwizard] framework. I planned to use Go as there seemed
 to be some interest in me showcasing go-restful and its Swagger support. However, the go CQL client is under heavy
 development and isn't well documented or feature complete. Dropwizard encourages production of a standalone jar file
 rather than a war deployed on a Java application server. This approach is consistent with a Microservices architecture.
