@@ -436,8 +436,8 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <ul class="sectlevel2">
 <li><a href="#_database_recommendation">2.1. Database Recommendation</a></li>
 <li><a href="#_service_implementation">2.2. Service Implementation</a></li>
-<li><a href="#_running">2.3. Running</a></li>
-<li><a href="#_building">2.4. Building</a></li>
+<li><a href="#_building">2.3. Building</a></li>
+<li><a href="#_running">2.4. Running</a></li>
 <li><a href="#_metrics">2.5. Metrics</a></li>
 </ul>
 </li>
@@ -510,18 +510,31 @@ License URL: <a href="http://www.apache.org/licenses/LICENSE-2.0.html" class="ba
 <div class="sect2">
 <h3 id="_database_recommendation"><a class="anchor" href="#_database_recommendation"></a>2.1. Database Recommendation</h3>
 <div class="paragraph">
-<p>Requirements prioritize availability and partition tolerance above consistency and explicitly state that eventual consistency is acceptable/expected. Cassandra is well-suited to these requirements. Many distributed databases use master/slave replication which have worse write performance and more complex failure characteristics. Cassandra is data center aware and provides a replication approach that has been validated by numerous internet scale companies such as Netflix and Facebook. I have never used Cassandra before, but preliminary research pointed me in that direction. I then read Cassandra High Availability and became more confident in the choice.</p>
+<p>Requirements prioritize availability and partition tolerance above consistency and explicitly state that eventual consistency
+ is acceptable/expected. Cassandra is well-suited to these requirements. Many distributed databases use master/slave
+ replication which have worse write performance and more complex failure characteristics. Cassandra is data center aware
+ and provides a replication approach that has been validated by numerous internet scale companies such as Netflix and
+ Facebook. I have never used Cassandra before, but preliminary research pointed me in that direction. I then read
+ <a href="http://www.amazon.com/Cassandra-High-Availability-Robbie-Strickland/dp/1783989122">Cassandra High Availability</a>
+  and became more confident in the choice. The limited prototype works well.</p>
 </div>
 <div class="sect3">
 <h4 id="_resolving_data_inconsistencies"><a class="anchor" href="#_resolving_data_inconsistencies"></a>2.1.1. Resolving Data Inconsistencies</h4>
 <div class="paragraph">
-<p>Cassandra is capable of recovering automatically from temporary network failures. All database operations include a timestamp. When resolving conflicts, the most recent timestamp wins. In the extremely unlikely case that two conflicting operations occurred at the exact same microsecond, Cassandra uses the byte value of the data to consistently resolve the conflict. There are two important time windows for recovering from node/network failures in Cassandra. The time that “hinted handoffs” are stored and the time tombstones, markers for deletes are stored. Additional recovery steps are required if these windows are exceeded.</p>
+<p>Cassandra is capable of recovering automatically from temporary network failures. All database operations include
+ a timestamp. When resolving conflicts, the most recent timestamp wins. In the extremely unlikely case that two
+ conflicting operations occurred at the exact same microsecond, Cassandra uses the byte value of the data to
+ consistently resolve the conflict. There are two important time windows for recovering from node/network
+ failures in Cassandra. The time that “hinted handoffs” are stored and the time tombstones, markers for deletes
+ are stored. Additional recovery steps are required if these windows are exceeded.</p>
 </div>
 </div>
 <div class="sect3">
 <h4 id="_database_schema"><a class="anchor" href="#_database_schema"></a>2.1.2. Database Schema</h4>
 <div class="paragraph">
-<p>Unlike most relational databases, Cassandra supports storage of multiple values in a column. This approach is used to store notes. It assists with the requirements that notes are deleted when an asset is deleted and that notes cannot be added to deleted assets. In addition, joins are not required to retrieve an assets notes.</p>
+<p>Unlike most relational databases, Cassandra supports storage of multiple values in a column. This approach is used
+to store notes. It assists with the requirements that notes are deleted when an asset is deleted and that notes
+ cannot be added to deleted assets. In addition, joins are not required to retrieve an assets notes.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -554,26 +567,106 @@ License URL: <a href="http://www.apache.org/licenses/LICENSE-2.0.html" class="ba
 <div class="sect2">
 <h3 id="_service_implementation"><a class="anchor" href="#_service_implementation"></a>2.2. Service Implementation</h3>
 <div class="paragraph">
-<p>The asset services are written in Java using the Dropwizard framework. I had planned to use Go as there seemed to be some interest in me showcasing go-restful and it&#8217;s Swagger support. However, the go CQL client is under heavy development and isn&#8217;t well documented or feature complete.
-Dropwizard encourages production of a standalone jar file rather than a war deployed on a Java application server. This approach is consistent with a Microservices architecture. Development and testing are accelerated. Also, it&#8217;s easy to run multiple copies of the application in Docker containers. I&#8217;ve included a Dockerfile in the build if you&#8217;d like to test it that way.
-Additionally, Dropwizard provides support for production deployment with integrated metrics and health checks. I&#8217;d looked last year when reading Building Microservices and wanted to try it out.</p>
+<p>The asset services are written in Java using the <a href="http://www.dropwizard.io/0.9.1/docs/">Dropwizard</a> framework. I had planned to use Go as there seemed
+to be some interest in me showcasing go-restful and it&#8217;s Swagger support. However, the go CQL client is under heavy
+development and isn&#8217;t well documented or feature complete. Dropwizard encourages production of a standalone jar file
+rather than a war deployed on a Java application server. This approach is consistent with a Microservices architecture.
+Development and testing are accelerated. Also, it&#8217;s easy to run multiple copies of the application in Docker containers.
+I&#8217;ve included a Dockerfile in the build if you&#8217;d like to test it that way. Additionally, Dropwizard provides support
+for production deployment with integrated metrics and health checks. I&#8217;d looked last year when reading
+<a href="http://www.amazon.com/Building-Microservices-Sam-Newman/dp/1491950358">Building Microservices</a> and wanted to try it out.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_running"><a class="anchor" href="#_running"></a>2.3. Running</h3>
-
-</div>
-<div class="sect2">
-<h3 id="_building"><a class="anchor" href="#_building"></a>2.4. Building</h3>
+<h3 id="_building"><a class="anchor" href="#_building"></a>2.3. Building</h3>
 <div class="paragraph">
-<p>Dropwizard encourages Maven, but I&#8217;ve been using Gradle for a couple of years and couldn&#8217;t make myself go back. If you have a version 8 JDK installed and it&#8217;s on your path or JAVA_HOME is properly set, just run the included Gradle wrapper file. It does require an internet connection to download Gradle and project dependencies. The result is an executable jar with all dependencies bundled in.</p>
+<p>Dropwizard encourages Maven, but I&#8217;ve been using Gradle for a couple of years and couldn&#8217;t make myself go back.
+If you have a version 8 JDK installed and it&#8217;s on your path or JAVA_HOME is properly set, just run the included Gradle wrapper file.
+It does require an internet connection to download Gradle and project dependencies. The result is an executable jar
+with all dependencies bundled in.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>./gradlew build</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Automated builds run on travis-ci with each push. In addition, there is a automated Docker build published to docker hub.
+To build it locally run the following.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>docker build -t amdonov/asset-service:latest .</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_running"><a class="anchor" href="#_running"></a>2.4. Running</h3>
+<div class="paragraph">
+<p>There are two data store implementations provided, one for Cassandra and a memory-based store.</p>
+</div>
+<div class="sect3">
+<h4 id="_memory_store"><a class="anchor" href="#_memory_store"></a>2.4.1. Memory Store</h4>
+<div class="paragraph">
+<p>No preparation is required to run the services with with a memory store. Use the provided configuration file, sample-config.yaml</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>java -jar build/libs/asset-service-0.1.0-SNAPSHOT-all.jar server sample-config.yaml</pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_cassandra_store"><a class="anchor" href="#_cassandra_store"></a>2.4.2. Cassandra Store</h4>
+<div class="paragraph">
+<p>To run the Cassandra store, a running Cassandra cluster is required. One can easily be started with
+<a href="https://github.com/pcmanus/ccm">ccm</a>. It was tested with the following.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>ccm create test -v 2.2.4 -n 3 -s</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>There is a sample cassandra configuration provided, cassandra-config.yaml. Start the Web services with the following.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>java -jar build/libs/asset-service-0.1.0-SNAPSHOT-all.jar server cassandra-config.yaml</pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_services"><a class="anchor" href="#_services"></a>2.4.3. Services</h4>
+<div class="paragraph">
+<p>If you use the provided configuration files, the services will be running on port 8080. The easiest way to test the services
+is with included Swagger UI. It&#8217;s available at <a href="http://localhost:8080/swagger">http://localhost:8080/swagger</a>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_admin_interface"><a class="anchor" href="#_admin_interface"></a>2.4.4. Admin Interface</h4>
+<div class="paragraph">
+<p>There are some additional features included for future production deployment. They are accessable on port 8081 by default at
+<a href="http://localhost:8081/">http:localhost:8081/</a> They included health checks, metrics, and thread monitoring.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_docker"><a class="anchor" href="#_docker"></a>2.4.5. Docker</h4>
+<div class="paragraph">
+<p>If desirable, the services can run in docker.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>docker run -it amdonov/asset-service server sample-config.yaml</pre>
+</div>
+</div>
 </div>
 </div>
 <div class="sect2">
 <h3 id="_metrics"><a class="anchor" href="#_metrics"></a>2.5. Metrics</h3>
 <div class="paragraph">
-<p>All service calls leverage DropWizards metrics collection. Metrics are available on the admin port, 8081 by default, at the path of /metrics?pretty=true.
-I didn&#8217;t perform any real load testing. I don&#8217;t have enough information about load and testing on laptop vice geographically distributed datacenters isn&#8217;t representative.
+<p>All service calls leverage Dropwizard&#8217;s metrics collection. Metrics are available on the admin port, 8081 by default, at the path of /metrics?pretty=true.
+I didn&#8217;t perform any real load testing. I don&#8217;t have enough information about load profile and testing on laptop vice geographically distributed datacenters isn&#8217;t representative.
  However, in support of paging development, I created 10,000 assets with curl, so assets were created one at a time without concurrent reads. The results are posted
  below. For comparison, I did the same thing with the memory store.</p>
 </div>

@@ -4,15 +4,28 @@ The asset Web services consist of RESTful services fronting a distributed databa
 
 === Database Recommendation
 
-Requirements prioritize availability and partition tolerance above consistency and explicitly state that eventual consistency is acceptable/expected. Cassandra is well-suited to these requirements. Many distributed databases use master/slave replication which have worse write performance and more complex failure characteristics. Cassandra is data center aware and provides a replication approach that has been validated by numerous internet scale companies such as Netflix and Facebook. I have never used Cassandra before, but preliminary research pointed me in that direction. I then read Cassandra High Availability and became more confident in the choice.
+Requirements prioritize availability and partition tolerance above consistency and explicitly state that eventual consistency
+ is acceptable/expected. Cassandra is well-suited to these requirements. Many distributed databases use master/slave
+ replication which have worse write performance and more complex failure characteristics. Cassandra is data center aware
+ and provides a replication approach that has been validated by numerous internet scale companies such as Netflix and
+ Facebook. I have never used Cassandra before, but preliminary research pointed me in that direction. I then read
+ link:http://www.amazon.com/Cassandra-High-Availability-Robbie-Strickland/dp/1783989122[Cassandra High Availability]
+  and became more confident in the choice. The limited prototype works well.
 
 ==== Resolving Data Inconsistencies
 
-Cassandra is capable of recovering automatically from temporary network failures. All database operations include a timestamp. When resolving conflicts, the most recent timestamp wins. In the extremely unlikely case that two conflicting operations occurred at the exact same microsecond, Cassandra uses the byte value of the data to consistently resolve the conflict. There are two important time windows for recovering from node/network failures in Cassandra. The time that “hinted handoffs” are stored and the time tombstones, markers for deletes are stored. Additional recovery steps are required if these windows are exceeded.
+Cassandra is capable of recovering automatically from temporary network failures. All database operations include
+ a timestamp. When resolving conflicts, the most recent timestamp wins. In the extremely unlikely case that two
+ conflicting operations occurred at the exact same microsecond, Cassandra uses the byte value of the data to
+ consistently resolve the conflict. There are two important time windows for recovering from node/network
+ failures in Cassandra. The time that “hinted handoffs” are stored and the time tombstones, markers for deletes
+ are stored. Additional recovery steps are required if these windows are exceeded.
 
 ==== Database Schema
 
-Unlike most relational databases, Cassandra supports storage of multiple values in a column. This approach is used to store notes. It assists with the requirements that notes are deleted when an asset is deleted and that notes cannot be added to deleted assets. In addition, joins are not required to retrieve an assets notes.
+Unlike most relational databases, Cassandra supports storage of multiple values in a column. This approach is used
+to store notes. It assists with the requirements that notes are deleted when an asset is deleted and that notes
+ cannot be added to deleted assets. In addition, joins are not required to retrieve an assets notes.
 
 ----
 CREATE TABLE assets (
@@ -30,20 +43,81 @@ CREATE TABLE assets (
 
 === Service Implementation
 
-The asset services are written in Java using the Dropwizard framework. I had planned to use Go as there seemed to be some interest in me showcasing go-restful and it's Swagger support. However, the go CQL client is under heavy development and isn't well documented or feature complete.
-Dropwizard encourages production of a standalone jar file rather than a war deployed on a Java application server. This approach is consistent with a Microservices architecture. Development and testing are accelerated. Also, it's easy to run multiple copies of the application in Docker containers. I've included a Dockerfile in the build if you'd like to test it that way.
-Additionally, Dropwizard provides support for production deployment with integrated metrics and health checks. I'd looked last year when reading Building Microservices and wanted to try it out.
-
-=== Running
+The asset services are written in Java using the link:http://www.dropwizard.io/0.9.1/docs/[Dropwizard] framework. I had planned to use Go as there seemed
+to be some interest in me showcasing go-restful and it's Swagger support. However, the go CQL client is under heavy
+development and isn't well documented or feature complete. Dropwizard encourages production of a standalone jar file
+rather than a war deployed on a Java application server. This approach is consistent with a Microservices architecture.
+Development and testing are accelerated. Also, it's easy to run multiple copies of the application in Docker containers.
+I've included a Dockerfile in the build if you'd like to test it that way. Additionally, Dropwizard provides support
+for production deployment with integrated metrics and health checks. I'd looked last year when reading
+link:http://www.amazon.com/Building-Microservices-Sam-Newman/dp/1491950358[Building Microservices] and wanted to try it out.
 
 === Building
 
-Dropwizard encourages Maven, but I've been using Gradle for a couple of years and couldn't make myself go back. If you have a version 8 JDK installed and it's on your path or JAVA_HOME is properly set, just run the included Gradle wrapper file. It does require an internet connection to download Gradle and project dependencies. The result is an executable jar with all dependencies bundled in.
+Dropwizard encourages Maven, but I've been using Gradle for a couple of years and couldn't make myself go back.
+If you have a version 8 JDK installed and it's on your path or JAVA_HOME is properly set, just run the included Gradle wrapper file.
+It does require an internet connection to download Gradle and project dependencies. The result is an executable jar
+with all dependencies bundled in.
+
+----
+./gradlew build
+----
+
+Automated builds run on travis-ci with each push. In addition, there is a automated Docker build published to docker hub.
+To build it locally run the following.
+
+----
+docker build -t amdonov/asset-service:latest .
+----
+
+=== Running
+
+There are two data store implementations provided, one for Cassandra and a memory-based store.
+
+==== Memory Store
+
+No preparation is required to run the services with with a memory store. Use the provided configuration file, sample-config.yaml
+
+----
+java -jar build/libs/asset-service-0.1.0-SNAPSHOT-all.jar server sample-config.yaml
+----
+
+==== Cassandra Store
+To run the Cassandra store, a running Cassandra cluster is required. One can easily be started with
+link:https://github.com/pcmanus/ccm[ccm]. It was tested with the following.
+
+----
+ccm create test -v 2.2.4 -n 3 -s
+----
+
+There is a sample cassandra configuration provided, cassandra-config.yaml. Start the Web services with the following.
+
+----
+java -jar build/libs/asset-service-0.1.0-SNAPSHOT-all.jar server cassandra-config.yaml
+----
+
+==== Services
+
+If you use the provided configuration files, the services will be running on port 8080. The easiest way to test the services
+is with included Swagger UI. It's available at link:http://localhost:8080/swagger[http://localhost:8080/swagger].
+
+==== Admin Interface
+
+There are some additional features included for future production deployment. They are accessable on port 8081 by default at
+link:http://localhost:8081/[http:localhost:8081/] They included health checks, metrics, and thread monitoring.
+
+==== Docker
+
+If desirable, the services can run in docker.
+
+----
+docker run -it amdonov/asset-service server sample-config.yaml
+----
 
 === Metrics
 
-All service calls leverage DropWizards metrics collection. Metrics are available on the admin port, 8081 by default, at the path of /metrics?pretty=true.
-I didn't perform any real load testing. I don't have enough information about load and testing on laptop vice geographically distributed datacenters isn't representative.
+All service calls leverage Dropwizard's metrics collection. Metrics are available on the admin port, 8081 by default, at the path of /metrics?pretty=true.
+I didn't perform any real load testing. I don't have enough information about load profile and testing on laptop vice geographically distributed datacenters isn't representative.
  However, in support of paging development, I created 10,000 assets with curl, so assets were created one at a time without concurrent reads. The results are posted
  below. For comparison, I did the same thing with the memory store.
 
