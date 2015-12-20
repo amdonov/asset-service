@@ -89,9 +89,10 @@ Memory
       "m15_rate" : 10.293621034472327,
       "m1_rate" : 58.078389437591916,
       "m5_rate" : 26.57566846742506,
-      "mean_rate" : 76.92383281630354,
+      "mean_rate" : 76.92383281630354, // <1>
       "duration_units" : "seconds",
       "rate_units" : "calls/second"
     }
 ----
 <1> On 77 calls/second for the memory store. The CPU was fairly idle. Need a multi-threaded client to excercise the service.
+

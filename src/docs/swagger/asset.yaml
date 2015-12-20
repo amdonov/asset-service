@@ -128,14 +128,19 @@ paths:
       - "application/json"
       produces:
       - "application/json"
-      parameters: []
+      parameters:
+      - name: "page"
+        in: "query"
+        description: "result page to display"
+        required: false
+        type: "string"
       responses:
         200:
           description: "success"
           schema:
             $ref: "#/definitions/SearchResult"
         400:
-          description: "invalid request"
+          description: "invalid request such as a bad page"
         500:
           description: "unexpected error"
 definitions:
@@ -176,6 +181,10 @@ definitions:
         type: "array"
         items:
           $ref: "#/definitions/AssetSummary"
+      nextPage:
+        type: "string"
+        description: "use this value as page argument to retrieve the next page of\
+          \ results"
   AssetSummary:
     required:
     - "name"

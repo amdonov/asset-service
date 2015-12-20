@@ -438,6 +438,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#_service_implementation">2.2. Service Implementation</a></li>
 <li><a href="#_running">2.3. Running</a></li>
 <li><a href="#_building">2.4. Building</a></li>
+<li><a href="#_metrics">2.5. Metrics</a></li>
 </ul>
 </li>
 <li><a href="#_resources">3. Resources</a>
@@ -520,7 +521,7 @@ License URL: <a href="http://www.apache.org/licenses/LICENSE-2.0.html" class="ba
 <div class="sect3">
 <h4 id="_database_schema"><a class="anchor" href="#_database_schema"></a>2.1.2. Database Schema</h4>
 <div class="paragraph">
-<p>Unlike most relational databases, Cassandra supports storage of multiple values in a column. This approach is used to store notes. It assists with the requirements that notes are deleted when an asset is deleted and that notes cannot be added to deleted assets. In addition, joins are not required to retrieve an assets notes. A timestamp is added and updated as required to support caching.</p>
+<p>Unlike most relational databases, Cassandra supports storage of multiple values in a column. This approach is used to store notes. It assists with the requirements that notes are deleted when an asset is deleted and that notes cannot be added to deleted assets. In addition, joins are not required to retrieve an assets notes.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -535,16 +536,16 @@ License URL: <a href="http://www.apache.org/licenses/LICENSE-2.0.html" class="ba
 <div class="colist arabic">
 <ol>
 <li>
-<p>A callout behind a line comment for C-style languages.</p>
+<p>Use the asset&#8217;s uri to uniquely identify it.</p>
 </li>
 <li>
-<p>A callout behind a line comment for Ruby, Python, Perl, etc.</p>
+<p>Holds the human readable name as required.</p>
 </li>
 <li>
-<p>A callout behind a line comment for Clojure.</p>
+<p>A timestamp is added and updated as required to support caching.</p>
 </li>
 <li>
-<p>A callout behind a line comment for Clojure.</p>
+<p>Notes are stored in the same table as a collection.</p>
 </li>
 </ol>
 </div>
@@ -565,7 +566,82 @@ Additionally, Dropwizard provides support for production deployment with integra
 <div class="sect2">
 <h3 id="_building"><a class="anchor" href="#_building"></a>2.4. Building</h3>
 <div class="paragraph">
-<p>Dropwizard encourages Maven, but I&#8217;ve been using Gradle for a couple of years and couldn&#8217;t make myself go back. If you have a JDK installed and it&#8217;s on your path or JAVA_HOME is properly set, just run the included Gradle wrapper file. It does require an internet connection to download Gradle and project dependencies.</p>
+<p>Dropwizard encourages Maven, but I&#8217;ve been using Gradle for a couple of years and couldn&#8217;t make myself go back. If you have a version 8 JDK installed and it&#8217;s on your path or JAVA_HOME is properly set, just run the included Gradle wrapper file. It does require an internet connection to download Gradle and project dependencies. The result is an executable jar with all dependencies bundled in.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_metrics"><a class="anchor" href="#_metrics"></a>2.5. Metrics</h3>
+<div class="paragraph">
+<p>All service calls leverage DropWizards metrics collection. Metrics are available on the admin port, 8081 by default, at the path of /metrics?pretty=true.
+I didn&#8217;t perform any real load testing. I don&#8217;t have enough information about load and testing on laptop vice geographically distributed datacenters isn&#8217;t representative.
+ However, in support of paging development, I created 10,000 assets with curl, so assets were created one at a time without concurrent reads. The results are posted
+ below. For comparison, I did the same thing with the memory store.</p>
+</div>
+<div class="paragraph">
+<p>Cassandra</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre> "com.mycompany.assets.AssetResource.createAsset" : {
+       "count" : 10000,
+       "max" : 0.017478096000000002,
+       "mean" : 0.002814376620566178,
+       "min" : 0.001953089,
+       "p50" : 0.002424475,
+       "p75" : 0.0028103620000000003,
+       "p95" : 0.004579411,
+       "p98" : 0.007236607000000001,
+       "p99" : 0.008595328000000001,
+       "p999" : 0.01311428,
+       "stddev" : 0.0012552083933711567,
+       "m15_rate" : 10.092396615694161,
+       "m1_rate" : 46.50558186597699,
+       "m5_rate" : 25.105013904684526,
+       "mean_rate" : 56.92798508217708, <b class="conum">(1)</b>
+       "duration_units" : "seconds",
+       "rate_units" : "calls/second"
+     }</pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Averages 57 inserts/second with service database running locally. Data is written 3 times.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Memory</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>"com.mycompany.assets.AssetResource.createAsset" : {
+      "count" : 10000,
+      "max" : 0.001961846,
+      "mean" : 1.1835166136245698E-4,
+      "min" : 7.8756E-5,
+      "p50" : 9.636100000000001E-5,
+      "p75" : 1.1936600000000001E-4,
+      "p95" : 2.30549E-4,
+      "p98" : 2.98819E-4,
+      "p99" : 4.07568E-4,
+      "p999" : 0.001961846,
+      "stddev" : 9.236737647115021E-5,
+      "m15_rate" : 10.293621034472327,
+      "m1_rate" : 58.078389437591916,
+      "m5_rate" : 26.57566846742506,
+      "mean_rate" : 76.92383281630354, <b class="conum">(1)</b>
+      "duration_units" : "seconds",
+      "rate_units" : "calls/second"
+    }</pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>On 77 calls/second for the memory store. The CPU was fairly idle. Need a multi-threaded client to excercise the service.</p>
+</li>
+</ol>
 </div>
 </div>
 </div>
@@ -576,104 +652,14 @@ Additionally, Dropwizard provides support for production deployment with integra
 <div class="sect2">
 <h3 id="_asset"><a class="anchor" href="#_asset"></a>3.1. Asset</h3>
 <div class="sect3">
-<h4 id="_delete_an_asset"><a class="anchor" href="#_delete_an_asset"></a>3.1.1. Delete an asset</h4>
-<div class="listingblock">
-<div class="content">
-<pre>DELETE /asset</pre>
-</div>
-</div>
-<div class="sect4">
-<h5 id="_parameters"><a class="anchor" href="#_parameters"></a>Parameters</h5>
-<table class="tableblock frame-all grid-all spread">
-<colgroup>
-<col style="width: 16%;">
-<col style="width: 16%;">
-<col style="width: 16%;">
-<col style="width: 16%;">
-<col style="width: 16%;">
-<col style="width: 16%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Type</th>
-<th class="tableblock halign-left valign-top">Name</th>
-<th class="tableblock halign-left valign-top">Description</th>
-<th class="tableblock halign-left valign-top">Required</th>
-<th class="tableblock halign-left valign-top">Schema</th>
-<th class="tableblock halign-left valign-top">Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">QueryParameter</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">uri</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">uri of asset to delete</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">true</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="sect4">
-<h5 id="_responses"><a class="anchor" href="#_responses"></a>Responses</h5>
-<table class="tableblock frame-all grid-all spread">
-<colgroup>
-<col style="width: 33%;">
-<col style="width: 33%;">
-<col style="width: 33%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">HTTP Code</th>
-<th class="tableblock halign-left valign-top">Description</th>
-<th class="tableblock halign-left valign-top">Schema</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">204</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">asset deleted</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">No Content</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">400</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">invalid request</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">No Content</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">404</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">asset not found</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">No Content</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">500</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">unexpected error</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">No Content</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="sect4">
-<h5 id="_consumes"><a class="anchor" href="#_consumes"></a>Consumes</h5>
-<div class="ulist">
-<ul>
-<li>
-<p>application/json</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_retrieve_an_asset"><a class="anchor" href="#_retrieve_an_asset"></a>3.1.2. Retrieve an asset</h4>
+<h4 id="_retrieve_an_asset"><a class="anchor" href="#_retrieve_an_asset"></a>3.1.1. Retrieve an asset</h4>
 <div class="listingblock">
 <div class="content">
 <pre>GET /asset</pre>
 </div>
 </div>
 <div class="sect4">
-<h5 id="_parameters_2"><a class="anchor" href="#_parameters_2"></a>Parameters</h5>
+<h5 id="_parameters"><a class="anchor" href="#_parameters"></a>Parameters</h5>
 <table class="tableblock frame-all grid-all spread">
 <colgroup>
 <col style="width: 16%;">
@@ -706,7 +692,7 @@ Additionally, Dropwizard provides support for production deployment with integra
 </table>
 </div>
 <div class="sect4">
-<h5 id="_responses_2"><a class="anchor" href="#_responses_2"></a>Responses</h5>
+<h5 id="_responses"><a class="anchor" href="#_responses"></a>Responses</h5>
 <table class="tableblock frame-all grid-all spread">
 <colgroup>
 <col style="width: 33%;">
@@ -750,7 +736,7 @@ Additionally, Dropwizard provides support for production deployment with integra
 </table>
 </div>
 <div class="sect4">
-<h5 id="_consumes_2"><a class="anchor" href="#_consumes_2"></a>Consumes</h5>
+<h5 id="_consumes"><a class="anchor" href="#_consumes"></a>Consumes</h5>
 <div class="ulist">
 <ul>
 <li>
@@ -761,6 +747,96 @@ Additionally, Dropwizard provides support for production deployment with integra
 </div>
 <div class="sect4">
 <h5 id="_produces"><a class="anchor" href="#_produces"></a>Produces</h5>
+<div class="ulist">
+<ul>
+<li>
+<p>application/json</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_delete_an_asset"><a class="anchor" href="#_delete_an_asset"></a>3.1.2. Delete an asset</h4>
+<div class="listingblock">
+<div class="content">
+<pre>DELETE /asset</pre>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_parameters_2"><a class="anchor" href="#_parameters_2"></a>Parameters</h5>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 16%;">
+<col style="width: 16%;">
+<col style="width: 16%;">
+<col style="width: 16%;">
+<col style="width: 16%;">
+<col style="width: 16%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Required</th>
+<th class="tableblock halign-left valign-top">Schema</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">QueryParameter</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uri</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uri of asset to delete</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">true</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect4">
+<h5 id="_responses_2"><a class="anchor" href="#_responses_2"></a>Responses</h5>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 33%;">
+<col style="width: 33%;">
+<col style="width: 33%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">HTTP Code</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">204</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">asset deleted</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No Content</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">400</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">invalid request</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No Content</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">404</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">asset not found</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No Content</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">500</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">unexpected error</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No Content</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect4">
+<h5 id="_consumes_2"><a class="anchor" href="#_consumes_2"></a>Consumes</h5>
 <div class="ulist">
 <ul>
 <li>
@@ -968,6 +1044,39 @@ Additionally, Dropwizard provides support for production deployment with integra
 </div>
 </div>
 <div class="sect4">
+<h5 id="_parameters_5"><a class="anchor" href="#_parameters_5"></a>Parameters</h5>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 16%;">
+<col style="width: 16%;">
+<col style="width: 16%;">
+<col style="width: 16%;">
+<col style="width: 16%;">
+<col style="width: 16%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Required</th>
+<th class="tableblock halign-left valign-top">Schema</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">QueryParameter</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">page</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">result page to display</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect4">
 <h5 id="_responses_5"><a class="anchor" href="#_responses_5"></a>Responses</h5>
 <table class="tableblock frame-all grid-all spread">
 <colgroup>
@@ -990,7 +1099,7 @@ Additionally, Dropwizard provides support for production deployment with integra
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">400</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">invalid request</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">invalid request such as a bad page</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">No Content</p></td>
 </tr>
 <tr>
@@ -1171,6 +1280,13 @@ Additionally, Dropwizard provides support for production deployment with integra
 <td class="tableblock halign-left valign-top"></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#_assetsummary">AssetSummary</a> array</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">nextPage</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">use this value as page argument to retrieve the next page of results</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 </tbody>
